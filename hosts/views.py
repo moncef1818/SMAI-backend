@@ -33,9 +33,10 @@ class HostRegisterView(APIView):
         )
         return Response({
                     'host_id': str(host.id),
+                    'api_key': str(host.api_key),
                     'created': created
             },
-            status = status.HTTP_201_OK if created else status.HTTP_200_OK
+            status = status.HTTP_201_CREATED if created else status.HTTP_200_OK
         )
     
 class HeartBeat(APIView):
