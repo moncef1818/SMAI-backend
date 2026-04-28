@@ -1,3 +1,5 @@
+from urllib import request
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -7,11 +9,21 @@ from .serializers import EventIngestSerializer
 from .models import Event
 from .tasks import ingest_event
 
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 class EventIngestView(APIView):
+
     authentication_classes = [HostAPIKeyAuthentication]
     permission_classes = [IsAuthenticated]
 
+
     def post(self,request):
+
+
+
         serializer = EventIngestSerializer(data=request.data)
 
         if not serializer.is_valid():

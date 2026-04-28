@@ -6,6 +6,10 @@ from django.utils import timezone
 from django.contrib.auth import get_user_model
 from .models import Host
 from .serializers import HostSerializer ,HostRegistrationSerializer, HeartbeatSerializer
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 User = get_user_model()
 
@@ -15,8 +19,13 @@ class HostRegisterView(APIView):
     permission_classes = [AllowAny]
 
     def post(self,request):
+        logger.info(f"[HOST REGISTER] Incoming request from {request.META.get('REMOTE_ADDR')}")
+        logger.info(f"[HOST REGISTER] Headers: {dict(request.headers)}")
+        logger.info(f"[HOST REGISTER] Body: {request.data}")
         serializer = HostRegistrationSerializer(data=request.data)
         if not serializer.is_valid():
+            logger.warning(f"[HOST REGISTER] Validation failed: {serializer.errors}")
+
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
         mac = serializer.validated_data['mac_address']
@@ -31,6 +40,9 @@ class HostRegisterView(APIView):
                 'last_seen':timezone.now(),
             }
         )
+
+        logger.info(f"[HOST REGISTER] Host {host.hostname} ({'created' if created else 'updated'}) with API key {host.api_key[:8]}...")
+        
         return Response({
                     'host_id': str(host.id),
                     'api_key': str(host.api_key),

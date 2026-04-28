@@ -28,12 +28,51 @@ def ingest_event(self , host_id: str,data: dict):
         host.last_seen = timezone.now()
         host.save()
         logger.info(f"[INGEST] Event {event.event_id} saved for host {host.hostname}")
-    
+
+        run_rule_engine.delay(str(event.event_id), data['log_source'], data['payload'], str(host.id))
     except Exception as exc:
         logger.error(f"[INGEST] Failed for host {host_id}: {exc}")
         raise self.retry(exc=exc)
 
     route_to_ml.delay(str(event.event_id), data['log_source'], data['payload'])
+
+
+@shared_task
+def run_rule_engine(event_id: str, log_source: str, payload: dict, host_id: str):
+
+    from .models import Event
+    from .rules.dispatcher import RuleDispatcher
+    from incidents.models import Incident
+
+    try:
+        event = Event.objects.get(event_id=event_id)
+        results = RuleDispatcher.dispatch(log_source, payload, host_id, event_id)
+
+        fired_results = [r for r in results if r.fired]
+        if fired_results:
+            event.rule_triggered = True
+            event.detection_source = "rule"
+            event.save()
+
+            for result in fired_results:
+                Incident.objects.create(
+                    host_id=host_id,
+                    event=event,
+                    threat_type=result.rule_id,
+                    threat_source="rule",
+                    severity=result.severity.value,
+                    ai_summary=result.triggering_fields
+                )
+                logger.info(f"[RULES] Incident created: {result.rule_id} on host {host_id}")
+            
+            # TODO: brodcast incidents via websockets
+
+    except Exception as e:
+        logger.error(f"[RULES] Failed to evaluate {event_id}: {e}")
+
+    route_to_ml.delay(event_id, log_source, payload)
+
+
 
 @shared_task
 def route_to_ml(event_id: str, log_source: str, payload: dict):

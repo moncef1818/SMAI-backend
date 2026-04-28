@@ -15,5 +15,3 @@ class Group(models.Model):
 
     def __str__(self):
         return str(self.name) + ':' + str(self.leader)
-
-# Create your models here.

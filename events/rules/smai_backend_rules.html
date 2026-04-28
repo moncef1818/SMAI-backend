@@ -1,0 +1,407 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);font-size:14px;color:var(--color-text-primary)}
+.wrap{padding:1rem 0}
+.section{margin-bottom:2rem}
+.section-title{font-size:15px;font-weight:500;padding:8px 12px;border-radius:var(--border-radius-md);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.monitor-badge{font-size:11px;font-weight:500;padding:2px 8px;border-radius:var(--border-radius-md);letter-spacing:.02em}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;padding:6px 10px;font-weight:500;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--color-text-secondary);border-bottom:0.5px solid var(--color-border-tertiary)}
+td{padding:6px 10px;vertical-align:top;border-bottom:0.5px solid var(--color-border-tertiary)}
+tr:last-child td{border-bottom:none}
+.rule-id{font-family:var(--font-mono);font-size:11px;font-weight:500;padding:2px 6px;border-radius:4px;white-space:nowrap}
+.sev{font-size:10px;font-weight:500;padding:2px 7px;border-radius:4px;white-space:nowrap}
+.sev-c{background:#FCEBEB;color:#791F1F}
+.sev-h{background:#FAEEDA;color:#633806}
+.sev-m{background:#E1F5EE;color:#085041}
+.field{font-family:var(--font-mono);font-size:11px;background:var(--color-background-secondary);padding:1px 5px;border-radius:3px;white-space:nowrap}
+.cond{color:var(--color-text-secondary);font-size:12px}
+.hard{font-size:10px;color:#791F1F;background:#FCEBEB;padding:1px 5px;border-radius:3px;font-weight:500}
+.scored{font-size:10px;color:#633806;background:#FAEEDA;padding:1px 5px;border-radius:3px;font-weight:500}
+.mitre{font-family:var(--font-mono);font-size:10px;color:var(--color-text-secondary)}
+.source-pill{font-size:10px;padding:2px 7px;border-radius:4px;white-space:nowrap;background:var(--color-background-secondary);color:var(--color-text-secondary);font-family:var(--font-mono)}
+.score-badge{font-family:var(--font-mono);font-size:10px;color:#3B6D11;background:#EAF3DE;padding:1px 6px;border-radius:3px}
+.note{font-size:11px;color:var(--color-text-secondary);padding:6px 10px;background:var(--color-background-secondary);border-radius:var(--border-radius-md);margin-top:6px;border-left:3px solid var(--color-border-secondary)}
+.window{font-size:10px;color:#185FA5;background:#E6F1FB;padding:1px 5px;border-radius:3px;font-family:var(--font-mono)}
+</style>
+<div class="wrap">
+
+<div class="section">
+<div class="section-title" style="background:#FCEBEB;color:#791F1F">
+  <span style="font-size:16px">⚡</span> A — Process monitor rules
+  <span class="monitor-badge" style="background:#F7C1C1;color:#791F1F">LogSource: ProcessMonitor</span>
+</div>
+<table>
+<thead><tr><th>Rule</th><th>Type</th><th>Fields used</th><th>Exact condition</th><th>Severity</th><th>MITRE</th></tr></thead>
+<tbody>
+<tr>
+  <td><span class="rule-id" style="background:#FCEBEB;color:#791F1F">A-1a</span></td>
+  <td><span class="hard">HARD</span></td>
+  <td><span class="field">ProcessName</span> <span class="field">ParentChainNames</span></td>
+  <td class="cond"><span class="field">EventType</span>="Start" AND <span class="field">ProcessName</span> IN ["cmd.exe","powershell.exe","pwsh.exe","wscript.exe","cscript.exe","mshta.exe"] AND any entry in <span class="field">ParentChainNames</span> IN ["WINWORD.EXE","EXCEL.EXE","POWERPNT.EXE","OUTLOOK.EXE","firefox.exe","chrome.exe","msedge.exe","AcroRd32.exe"]</td>
+  <td><span class="sev sev-c">Critical</span></td>
+  <td class="mitre">T1566.001</td>
+</tr>
+<tr>
+  <td><span class="rule-id" style="background:#FCEBEB;color:#791F1F">A-1b</span></td>
+  <td><span class="hard">HARD</span></td>
+  <td><span class="field">IsSigned</span> <span class="field">ImageFileName</span></td>
+  <td class="cond"><span class="field">EventType</span>="Start" AND <span class="field">IsSigned</span>=false AND (<span class="field">ImageFileName</span> CONTAINS "\Temp\" OR CONTAINS "\AppData\" OR CONTAINS "\Downloads\")</td>
+  <td><span class="sev sev-h">High</span></td>
+  <td class="mitre">T1204.002</td>
+</tr>
+<tr>
+  <td><span class="rule-id" style="background:#FCEBEB;color:#791F1F">A-1c</span></td>
+  <td><span class="hard">HARD</span></td>
+  <td><span class="field">CommandLine</span></td>
+  <td class="cond"><span class="field">EventType</span>="Start" AND <span class="field">CommandLine</span> MATCHES ANY OF: ["certutil.*-decode","certutil.*-urlcache","regsvr32.*/s","mshta.*http","rundll32.*,#","wmic.*process.*call.*create","bitsadmin.*/transfer"]</td>
+  <td><span class="sev sev-h">High</span></td>
+  <td class="mitre">T1218</td>
+</tr>
+<tr>
+  <td><span class="rule-id" style="background:#FAEEDA;color:#633806">A-4a</span></td>
+  <td><span class="hard">HARD</span></td>
+  <td><span class="field">ProcessName</span> <span class="field">CommandLine</span> <span class="field">ParentChainNames</span></td>
+  <td class="cond"><span class="field">ProcessName</span>="net.exe" AND <span class="field">CommandLine</span> ICONTAINS "localgroup" AND ICONTAINS "administrators" AND <span class="field">ParentChainNames</span> does NOT contain ["explorer.exe","cmd.exe"] (i.e. non-interactive parent)</td>
+  <td><span class="sev sev-m">Medium</span></td>
+  <td class="mitre">T1069.001</td>
+</tr>
+<tr>
+  <td><span class="rule-id" style="background:#FAEEDA;color:#633806">A-4b</span></td>
+  <td><span class="hard">HARD</span></td>
+  <td><span class="field">ProcessName</span> <span class="field">CommandLine</span> <span class="field">ParentChainNames</span></td>
+  <td class="cond"><span class="field">ProcessName</span> IN ["whoami.exe","ipconfig.exe","systeminfo.exe","net.exe","nltest.exe"] AND <span class="field">CommandLine</span> MATCHES ["/all","domain","/priv"] AND <span class="field">ParentChainNames</span> contains suspicious shell (NOT explorer.exe)</td>
+  <td><span class="sev sev-m">Medium</span></td>
+  <td class="mitre">T1082</td>
+</tr>
+</tbody></table>
+<div class="note">Window state: maintain in-memory <span class="field">ParentChain</span> PID→Name map. The agent already sends <span class="field">ParentChainNames[]</span> so no extra lookup needed on backend.</div>
+</div>
+
+<div class="section">
+<div class="section-title" style="background:#FAEEDA;color:#633806">
+  <span style="font-size:16px">📁</span> A — File monitor rules
+  <span class="monitor-badge" style="background:#FAC775;color:#633806">LogSource: FileMonitor</span>
+</div>
+<table>
+<thead><tr><th>Rule</th><th>Type</th><th>Fields used</th><th>Exact condition</th><th>Severity</th><th>MITRE</th></tr></thead>
+<tbody>
+<tr>
+  <td><span class="rule-id" style="background:#FCEBEB;color:#791F1F">A-4c</span></td>
+  <td><span class="hard">HARD</span></td>
+  <td><span class="field">Entropy</span> <span class="field">ProcessID</span></td>
+  <td class="cond"><span class="field">EventType</span>="FileIO/Write" AND <span class="field">Entropy</span> &gt; 7.5 → increment per-PID counter. FIRE when count &gt; 50 within <span class="window">60s sliding window</span> per PID. Reset counter on window expiry.</td>
+  <td><span class="sev sev-c">Critical</span></td>
+  <td class="mitre">T1486</td>
+</tr>
+<tr>
+  <td><span class="rule-id" style="background:#FCEBEB;color:#791F1F">A-4d</span></td>
+  <td><span class="hard">HARD</span></td>
+  <td><span class="field">FilePath</span> <span class="field">Extension</span> <span class="field">ProcessName</span></td>
+  <td class="cond"><span class="field">EventType</span>="FileIO/Create" AND <span class="field">Extension</span> IN [".exe",".dll",".sys"] AND <span class="field">FilePath</span> ICONTAINS "\System32\" AND <span class="field">ProcessName</span> NOT IN ["TrustedInstaller.exe","msiexec.exe","wusa.exe","svchost.exe"]</td>
+  <td><span class="sev sev-h">High</span></td>
+  <td class="mitre">T1574.001</td>
+</tr>
+<tr>
+  <td><span class="rule-id" style="background:#FCEBEB;color:#791F1F">A-4e</span></td>
+  <td><span class="hard">HARD</span></td>
+  <td><span class="field">EventType</span> <span class="field">Extension</span> <span class="field">Entropy</span></td>
+  <td class="cond"><span class="field">EventType</span>="FileIO/SetInfo" AND <span class="field">Extension</span> IN [".locked",".encrypted",".enc",".crypt",".crypted",".locky",".zepto",".cerber",".zzzzz",".shit",".thor",".osiris"]. Optional corroboration: same PID also has <span class="field">Entropy</span> &gt; 7.5 writes.</td>
+  <td><span class="sev sev-c">Critical</span></td>
+  <td class="mitre">T1486</td>
+</tr>
+</tbody></table>
+<div class="note">State required: <span class="field">Map&lt;PID, List&lt;DateTime&gt;&gt;</span> for A-4c sliding window. Evict entries older than 60s on each new event for that PID.</div>
+</div>
+
+<div class="section">
+<div class="section-title" style="background:#E6F1FB;color:#0C447C">
+  <span style="font-size:16px">🌐</span> B — Network monitor rules
+  <span class="monitor-badge" style="background:#B5D4F4;color:#0C447C">LogSource: NetworkMonitor</span>
+</div>
+<table>
+<thead><tr><th>Rule</th><th>Type</th><th>Fields used</th><th>Exact condition</th><th>Severity</th><th>MITRE</th></tr></thead>
+<tbody>
+<tr>
+  <td><span class="rule-id" style="background:#E6F1FB;color:#0C447C">B-1a</span></td>
+  <td><span class="hard">HARD</span></td>
+  <td><span class="field">IatCoefficientOfVariation</span> <span class="field">ProcessID</span> <span class="field">DestinationAddr</span></td>
+  <td class="cond"><span class="field">EventType</span>="Send" AND <span class="field">IatCoefficientOfVariation</span> IS NOT NULL AND <span class="field">IatCoefficientOfVariation</span> &lt; 0.1 (agent pre-computes CoV over ≥5 samples per PID:DstAddr:DstPort in 60min window — value already present in payload)</td>
+  <td><span class="sev sev-h">High</span></td>
+  <td class="mitre">T1071.001</td>
+</tr>
+<tr>
+  <td><span class="rule-id" style="background:#E6F1FB;color:#0C447C">B-1b</span></td>
+  <td><span class="hard">HARD</span></td>
+  <td><span class="field">UniqueDstPortsLast10s</span> <span class="field">ProcessID</span></td>
+  <td class="cond"><span class="field">EventType</span>="Send" AND <span class="field">UniqueDstPortsLast10s</span> IS NOT NULL AND <span class="field">UniqueDstPortsLast10s</span> &gt; 20 (agent pre-computes — value already in payload)</td>
+  <td><span class="sev sev-h">High</span></td>
+  <td class="mitre">T1046</td>
+</tr>
+<tr>
+  <td><span class="rule-id" style="background:#E6F1FB;color:#0C447C">B-1c</span></td>
+  <td><span class="hard">HARD</span></td>
+  <td><span class="field">ExfiltrationZScore</span> <span class="field">ProcessID</span></td>
+  <td class="cond"><span class="field">EventType</span>="Send" AND <span class="field">ExfiltrationZScore</span> IS NOT NULL AND <span class="field">ExfiltrationZScore</span> &gt; 3.0 (agent pre-computes z-score vs 7-day baseline — value already in payload). Note: null until ≥2 days of baseline exist, never fire on null.</td>
+  <td><span class="sev sev-m">Medium</span></td>
+  <td class="mitre">T1041</td>
+</tr>
+</tbody></table>
+<div class="note">All three B-1 fields are pre-computed inline by the agent before the event is emitted. Backend evaluation is a simple numeric comparison — no sliding windows needed on the backend side.</div>
+</div>
+
+<div class="section">
+<div class="section-title" style="background:#E1F5EE;color:#085041">
+  <span style="font-size:16px">🔑</span> C — Auth monitor rules
+  <span class="monitor-badge" style="background:#9FE1CB;color:#085041">LogSource: AuthMonitor</span>
+</div>
+<table>
+<thead><tr><th>Rule</th><th>Type</th><th>Fields used</th><th>Exact condition</th><th>Severity</th><th>MITRE</th></tr></thead>
+<tbody>
+<tr>
+  <td><span class="rule-id" style="background:#FCEBEB;color:#791F1F">C-1a</span></td>
+  <td><span class="hard">HARD</span></td>
+  <td><span class="field">FailCount30s</span> <span class="field">EventType</span></td>
+  <td class="cond"><span class="field">EventType</span>="LogonFailure" AND <span class="field">FailCount30s</span> &gt;= 5 (agent pre-computes per SourceIp→TargetAccount sliding window)</td>
+  <td><span class="sev sev-h">High</span></td>
+  <td class="mitre">T1110.001</td>
+</tr>
+<tr>
+  <td><span class="rule-id" style="background:#FCEBEB;color:#791F1F">C-1b</span></td>
+  <td><span class="hard">HARD</span></td>
+  <td><span class="field">UniqueAccountsFailed5m</span> <span class="field">FailureSubStatusUniform</span></td>
+  <td class="cond"><span class="field">EventType</span>="LogonFailure" AND <span class="field">UniqueAccountsFailed5m</span> &gt;= 10. Confidence boost: also check <span class="field">FailureSubStatusUniform</span>=true (same password tried on many accounts)</td>
+  <td><span class="sev sev-h">High</span></td>
+  <td class="mitre">T1110.003</td>
+</tr>
+<tr>
+  <td><span class="rule-id" style="background:#FCEBEB;color:#791F1F">C-1c</span></td>
+  <td><span class="hard">HARD</span></td>
+  <td><span class="field">SuccessAfterNFails</span></td>
+  <td class="cond"><span class="field">EventType</span>="LogonSuccess" AND <span class="field">SuccessAfterNFails</span> IS NOT NULL AND <span class="field">SuccessAfterNFails</span> &gt; 20</td>
+  <td><span class="sev sev-c">Critical</span></td>
+  <td class="mitre">T1110</td>
+</tr>
+<tr>
+  <td><span class="rule-id" style="background:#FAEEDA;color:#633806">C-1d</span></td>
+  <td><span class="hard">HARD</span></td>
+  <td><span class="field">MeanTimeBetweenAttemptsMs</span></td>
+  <td class="cond"><span class="field">EventType</span>="LogonFailure" AND <span class="field">MeanTimeBetweenAttemptsMs</span> IS NOT NULL AND <span class="field">MeanTimeBetweenAttemptsMs</span> &lt; 100</td>
+  <td><span class="sev sev-h">High</span></td>
+  <td class="mitre">T1110</td>
+</tr>
+<tr>
+  <td><span class="rule-id" style="background:#FAEEDA;color:#633806">C-1e</span></td>
+  <td><span class="hard">HARD</span></td>
+  <td><span class="field">IsNewMachine</span> <span class="field">LogonType</span> <span class="field">SourceIsExternal</span></td>
+  <td class="cond"><span class="field">EventType</span>="LogonSuccess" AND <span class="field">IsNewMachine</span>=true AND <span class="field">LogonType</span>=10 (RDP). Escalate to High if also <span class="field">SourceIsExternal</span>=true.</td>
+  <td><span class="sev sev-m">Medium</span></td>
+  <td class="mitre">T1021.001</td>
+</tr>
+<tr>
+  <td><span class="rule-id" style="background:#FAEEDA;color:#633806">C-1f</span></td>
+  <td><span class="hard">HARD</span></td>
+  <td><span class="field">FailToSuccessRatio</span> <span class="field">TargetIsAdmin</span></td>
+  <td class="cond"><span class="field">EventType</span>="LogonSuccess" AND <span class="field">FailToSuccessRatio</span> &gt; 10 AND <span class="field">TargetIsAdmin</span>=true</td>
+  <td><span class="sev sev-h">High</span></td>
+  <td class="mitre">T1078.002</td>
+</tr>
+<tr>
+  <td><span class="rule-id" style="background:#FAEEDA;color:#633806">C-1g</span></td>
+  <td><span class="hard">HARD</span></td>
+  <td><span class="field">EventType</span> <span class="field">FailureReason</span></td>
+  <td class="cond"><span class="field">EventType</span>="AccountLockout" (EventId=4740). Always emit alert regardless of other fields. The lockout itself is the signal.</td>
+  <td><span class="sev sev-m">Medium</span></td>
+  <td class="mitre">T1110.001</td>
+</tr>
+<tr>
+  <td><span class="rule-id" style="background:#FAEEDA;color:#633806">C-1h</span></td>
+  <td><span class="hard">HARD</span></td>
+  <td><span class="field">EventType</span> <span class="field">AuthPackage</span> <span class="field">SourceIsExternal</span></td>
+  <td class="cond"><span class="field">EventType</span>="NtlmSuccess" AND <span class="field">AuthPackage</span>="NTLM" AND <span class="field">SourceIsExternal</span>=true (external NTLM auth = credential relay risk)</td>
+  <td><span class="sev sev-m">Medium</span></td>
+  <td class="mitre">T1557.001</td>
+</tr>
+</tbody></table>
+<div class="note">All C-1 sliding window fields (<span class="field">FailCount30s</span>, <span class="field">UniqueAccountsFailed5m</span>, <span class="field">MeanTimeBetweenAttemptsMs</span>, <span class="field">SuccessAfterNFails</span>) are pre-computed by the agent. Backend checks are pure comparisons. UEBA fields (<span class="field">LogonHour</span>, <span class="field">LogonDayOfWeek</span>, <span class="field">IsNewMachine</span>) are raw observations for the ML pipeline.</div>
+</div>
+
+<div class="section">
+<div class="section-title" style="background:#EAF3DE;color:#27500A">
+  <span style="font-size:16px">🔌</span> D — USB monitor rules
+  <span class="monitor-badge" style="background:#C0DD97;color:#27500A">LogSource: UsbMonitor</span>
+</div>
+<table>
+<thead><tr><th>Rule</th><th>Type</th><th>Fields used</th><th>Exact condition</th><th>Severity</th><th>Score</th><th>MITRE</th></tr></thead>
+<tbody>
+<tr>
+  <td><span class="rule-id" style="background:#FCEBEB;color:#791F1F">D-2</span></td>
+  <td><span class="hard">HARD</span></td>
+  <td><span class="field">InsertOnServerClassHost</span></td>
+  <td class="cond"><span class="field">EventType</span>="Insert" AND <span class="field">InsertOnServerClassHost</span>=true. No other condition needed.</td>
+  <td><span class="sev sev-c">Critical</span></td>
+  <td>—</td>
+  <td class="mitre">T1052.001</td>
+</tr>
+<tr>
+  <td><span class="rule-id" style="background:#FCEBEB;color:#791F1F">D-1a</span></td>
+  <td><span class="hard">HARD</span></td>
+  <td><span class="field">VidPidBlocklisted</span> <span class="field">BlocklistMatchName</span></td>
+  <td class="cond"><span class="field">EventType</span>="Insert" AND <span class="field">VidPidBlocklisted</span>=true. Include <span class="field">BlocklistMatchName</span> in alert body.</td>
+  <td><span class="sev sev-c">Critical</span></td>
+  <td>—</td>
+  <td class="mitre">T1200</td>
+</tr>
+<tr>
+  <td><span class="rule-id" style="background:#FCEBEB;color:#791F1F">D-3</span></td>
+  <td><span class="hard">HARD</span></td>
+  <td><span class="field">DeviceClassIsHid</span></td>
+  <td class="cond"><span class="field">EventType</span>="Insert" AND <span class="field">DeviceClassIsHid</span>=true</td>
+  <td><span class="sev sev-c">Critical</span></td>
+  <td>—</td>
+  <td class="mitre">T1200</td>
+</tr>
+<tr>
+  <td><span class="rule-id" style="background:#FAEEDA;color:#633806">D-1b</span></td>
+  <td><span class="scored">SCORED</span></td>
+  <td><span class="field">IsFirstSeen</span> <span class="field">TotalBytesWritten</span></td>
+  <td class="cond"><span class="field">EventType</span>="Remove" AND <span class="field">IsFirstSeen</span>=true AND <span class="field">TotalBytesWritten</span> &gt; 524288000 (500 MB)</td>
+  <td><span class="sev sev-h">High</span></td>
+  <td><span class="score-badge">+75</span></td>
+  <td class="mitre">T1052.001</td>
+</tr>
+<tr>
+  <td><span class="rule-id" style="background:#FAEEDA;color:#633806">D-1c</span></td>
+  <td><span class="scored">SCORED</span></td>
+  <td><span class="field">SensitiveExtCount</span> <span class="field">IsFirstSeen</span></td>
+  <td class="cond"><span class="field">EventType</span>="Remove" AND <span class="field">SensitiveExtCount</span> &gt; 50 AND <span class="field">IsFirstSeen</span>=true</td>
+  <td><span class="sev sev-h">High</span></td>
+  <td><span class="score-badge">+70</span></td>
+  <td class="mitre">T1052.001</td>
+</tr>
+<tr>
+  <td><span class="rule-id" style="background:#FAEEDA;color:#633806">D-1d</span></td>
+  <td><span class="scored">SCORED</span></td>
+  <td><span class="field">InsertHour</span> <span class="field">IsFirstSeen</span></td>
+  <td class="cond">(<span class="field">EventType</span>="Insert" OR "Remove") AND <span class="field">IsFirstSeen</span>=true AND <span class="field">InsertHour</span> BETWEEN 23 AND 5 (i.e. &gt;=23 OR &lt;=5)</td>
+  <td><span class="sev sev-m">Medium</span></td>
+  <td><span class="score-badge">+50</span></td>
+  <td class="mitre">T1052</td>
+</tr>
+<tr>
+  <td><span class="rule-id" style="background:#FAEEDA;color:#633806">D-1e</span></td>
+  <td><span class="scored">SCORED</span></td>
+  <td><span class="field">BytesToUsbPerMin</span></td>
+  <td class="cond"><span class="field">EventType</span>="Remove" AND <span class="field">BytesToUsbPerMin</span> &gt; 50 (MB/min)</td>
+  <td><span class="sev sev-m">Medium</span></td>
+  <td><span class="score-badge">+45</span></td>
+  <td class="mitre">T1052</td>
+</tr>
+<tr>
+  <td><span class="rule-id" style="background:#FAEEDA;color:#633806">D-1f</span></td>
+  <td><span class="scored">SCORED</span></td>
+  <td><span class="field">TimeTo500MbSec</span></td>
+  <td class="cond"><span class="field">EventType</span>="Remove" AND <span class="field">TimeTo500MbSec</span> IS NOT NULL AND <span class="field">TimeTo500MbSec</span> &lt; 60</td>
+  <td><span class="sev sev-h">High</span></td>
+  <td><span class="score-badge">+65</span></td>
+  <td class="mitre">T1052.001</td>
+</tr>
+<tr>
+  <td><span class="rule-id" style="background:#FAEEDA;color:#633806">D-1g</span></td>
+  <td><span class="scored">SCORED</span></td>
+  <td><span class="field">AutoExecScriptDetected</span></td>
+  <td class="cond"><span class="field">EventType</span>="Remove" (or Insert) AND <span class="field">AutoExecScriptDetected</span>=true</td>
+  <td><span class="sev sev-h">High</span></td>
+  <td><span class="score-badge">+70</span></td>
+  <td class="mitre">T1091</td>
+</tr>
+</tbody></table>
+<div class="note">Scored rules: sum all matching scores for the same device event. Emit HIGH alert if total ≥ 70. Emit MEDIUM if total ≥ 45. Hard rules always fire regardless of score.</div>
+</div>
+
+<div class="section">
+<div class="section-title" style="background:#EEEDFE;color:#3C3489">
+  <span style="font-size:16px">⚙</span> Registry monitor rules — planned
+  <span class="monitor-badge" style="background:#CECBF6;color:#3C3489">LogSource: RegistryMonitor</span>
+</div>
+<table>
+<thead><tr><th>Rule</th><th>Type</th><th>Fields used</th><th>Exact condition</th><th>Severity</th><th>MITRE</th></tr></thead>
+<tbody>
+<tr>
+  <td><span class="rule-id" style="background:#FCEBEB;color:#791F1F">A-5b</span></td>
+  <td><span class="hard">HARD</span></td>
+  <td><span class="field">IsSensitiveKey</span> <span class="field">IsSignedBinary</span></td>
+  <td class="cond"><span class="field">IsSensitiveKey</span>=true (SAM/LSA/SECURITY path). Escalate to Critical if also <span class="field">IsSignedBinary</span>=false or null.</td>
+  <td><span class="sev sev-c">Critical</span></td>
+  <td class="mitre">T1003.002</td>
+</tr>
+<tr>
+  <td><span class="rule-id" style="background:#FAEEDA;color:#633806">A-5a</span></td>
+  <td><span class="hard">HARD</span></td>
+  <td><span class="field">IsAutorunKey</span> <span class="field">ProcessName</span> <span class="field">IsSignedBinary</span></td>
+  <td class="cond"><span class="field">IsAutorunKey</span>=true AND <span class="field">ProcessName</span> NOT IN whitelist ["services.exe","svchost.exe","msiexec.exe","TrustedInstaller.exe"]. Escalate if <span class="field">IsSignedBinary</span>=false.</td>
+  <td><span class="sev sev-h">High</span></td>
+  <td class="mitre">T1547.001</td>
+</tr>
+<tr>
+  <td><span class="rule-id" style="background:#E1F5EE;color:#085041">A-5e</span></td>
+  <td><span class="hard">HARD</span></td>
+  <td><span class="field">OperationType</span> <span class="field">KeyPath</span> <span class="field">ProcessName</span></td>
+  <td class="cond"><span class="field">OperationType</span>="RegDeleteKey" AND <span class="field">KeyPath</span> ICONTAINS "CurrentControlSet\Services\" AND <span class="field">ProcessName</span> NOT IN ["services.exe","TrustedInstaller.exe"]</td>
+  <td><span class="sev sev-m">Medium</span></td>
+  <td class="mitre">T1562.001</td>
+</tr>
+</tbody></table>
+</div>
+
+<div class="section">
+<div class="section-title" style="background:#F1EFE8;color:#444441">
+  <span style="font-size:16px">🔗</span> Correlation rules — cross-monitor
+  <span class="monitor-badge" style="background:#D3D1C7;color:#444441">Multi-source</span>
+</div>
+<table>
+<thead><tr><th>Rule</th><th>Sources</th><th>Window</th><th>Condition</th><th>Severity</th></tr></thead>
+<tbody>
+<tr>
+  <td><span class="rule-id" style="background:#FCEBEB;color:#791F1F">COR-1</span></td>
+  <td><span class="source-pill">AuthMonitor</span> + <span class="source-pill">ProcessMonitor</span></td>
+  <td><span class="window">5 min</span></td>
+  <td class="cond">C-1c fires (SuccessAfterNFails &gt; 20) on host X AND within 5min same host emits A-1a (suspicious child process spawn) from same <span class="field">TargetAccount</span></td>
+  <td><span class="sev sev-c">Critical</span></td>
+</tr>
+<tr>
+  <td><span class="rule-id" style="background:#FCEBEB;color:#791F1F">COR-2</span></td>
+  <td><span class="source-pill">NetworkMonitor</span> + <span class="source-pill">FileMonitor</span></td>
+  <td><span class="window">10 min</span></td>
+  <td class="cond">B-1c fires (ExfiltrationZScore &gt; 3.0) AND within 10min same PID also has A-4c (mass high-entropy writes) → likely ransomware exfiltrating before encrypting</td>
+  <td><span class="sev sev-c">Critical</span></td>
+</tr>
+<tr>
+  <td><span class="rule-id" style="background:#FCEBEB;color:#791F1F">COR-3</span></td>
+  <td><span class="source-pill">UsbMonitor</span> + <span class="source-pill">FileMonitor</span></td>
+  <td><span class="window">Remove event</span></td>
+  <td class="cond">D-1b fires (bulk USB copy) AND <span class="field">SensitiveExtCount</span> &gt; 0 AND at least one of the written files had <span class="field">Entropy</span> &lt; 3.0 (plaintext data, not already-encrypted)</td>
+  <td><span class="sev sev-c">Critical</span></td>
+</tr>
+</tbody></table>
+</div>
+
+<div class="section">
+<div class="section-title" style="background:#F1EFE8;color:#444441">
+  Implementation notes for backend developer
+</div>
+<table>
+<thead><tr><th>Topic</th><th>Requirement</th></tr></thead>
+<tbody>
+<tr><td style="font-weight:500;white-space:nowrap">Event routing</td><td class="cond">Route by <span class="field">LogSource</span> field in EventEnvelope. Never parse filename. Values: ProcessMonitor | FileMonitor | NetworkMonitor | AuthMonitor | UsbMonitor | RegistryMonitor</td></tr>
+<tr><td style="font-weight:500;white-space:nowrap">Hard vs scored</td><td class="cond">Hard rules: evaluate synchronously per event, emit alert immediately. Scored rules (D-series only): accumulate per device event, emit one alert with total score and all matching rule IDs after Remove event.</td></tr>
+<tr><td style="font-weight:500;white-space:nowrap">Null safety</td><td class="cond">All derived fields (IatCoefficientOfVariation, ExfiltrationZScore, FailCount30s, etc.) can be null — always null-check before comparison. A null value means "not enough data yet", never fire the rule on null.</td></tr>
+<tr><td style="font-weight:500;white-space:nowrap">Backend state</td><td class="cond">Only A-4c requires backend sliding window state (PID→timestamps). All other rules are stateless evaluations of pre-computed agent fields.</td></tr>
+<tr><td style="font-weight:500;white-space:nowrap">Deduplication</td><td class="cond">Suppress duplicate alerts: do not re-fire the same rule for the same host_id within the cooldown: A-series=5min, B-series=10min, C-1a=30s, C-1b=5min, D-series per device_id.</td></tr>
+<tr><td style="font-weight:500;white-space:nowrap">Alert payload</td><td class="cond">Every alert must include: rule_id, severity, host_id, log_source, timestamp, triggering_field_values (the exact fields and values that matched), mitre_technique, raw_event_payload (the full original JSON).</td></tr>
+<tr><td style="font-weight:500;white-space:nowrap">IsSigned=null</td><td class="cond">Never treat null as false. IsSigned null = "check not performed". IsSigned false = "checked and unsigned". These are different. Only fire A-1b on IsSigned=false (explicit).</td></tr>
+</tbody></table>
+</div>
+
+</div>
