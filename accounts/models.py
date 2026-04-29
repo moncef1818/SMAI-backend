@@ -1,43 +1,42 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from hosts.models import Host
+
 
 class User(AbstractUser):
-    ROLES_CHOICES = [
-        ('admin', 'Admin'),
-        ('leader', 'Group Leader'),
-        ('employee', 'Employeee')
+    ROLE_CHOICES = [
+        ('admin', 'Administrator'),
+        ('group_leader', 'Group Leader'),
+        ('employee', 'Employee'),
     ]
-
-    role = models.CharField(
-        max_length=10,
-        choices=ROLES_CHOICES,
-        default='employee'
-        )
-
+    
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='employee')
     host = models.OneToOneField(
-        'hosts.Host',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
+        Host,
+        on_delete=models.CASCADE,
         related_name='user'
     )
 
+    class Meta:
+        verbose_name = 'User'
+        verbose_name_plural = 'Users'
+
     def __str__(self):
-        return f'({self.username}:{self.role})'
-    
+        return f"{self.username} ({self.role})"
+
     @property
     def is_admin(self):
         return self.role == 'admin'
-    
+
     @property
-    def is_leader(self):
-        return self.role == 'leader'
-    
+    def is_group_leader(self):
+        return self.role == 'group_leader'
+
     @property
     def is_employee(self):
         return self.role == 'employee'
     
-
-
-
-# Create your models here.
+    @property
+    def group(self):
+        """Access group through host relationship."""
+        return self.host.group if self.host else None

@@ -2,6 +2,7 @@ ML_ROUTING_MAP = {
     'NetworkMonitor':       'network',
     'FileIntegrityMonitor': 'filesystem',
     'ProcessMonitor':       'system',
+    'BrowserExtension':       'browser',
 }
 
 def resolve_ml_target(log_source: str) -> str | None:

@@ -1,9 +1,19 @@
 from django.urls import path
-from .views import RegisterView ,MeView ,ChangeRoleView ,ListUsersView
+from rest_framework_simplejwt.views import TokenRefreshView
+from .views import (
+    RegisterView, LoginView, UserDetailView, ListUsersView,
+    AssignHostToGroupView, ElevateUserView, ListGroupsView
+)
 
 urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
-    path('me/', MeView.as_view(), name='me'),
-    path('change-role/', ChangeRoleView.as_view(), name='change-role'),
-    path('users/', ListUsersView.as_view(), name='list-users'),
+    path('login/', LoginView.as_view(), name='login'),
+    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('me/', UserDetailView.as_view(), name='user_detail'),
+    
+    # Admin only
+    path('users/', ListUsersView.as_view(), name='list_users'),
+    path('hosts/assign-group/', AssignHostToGroupView.as_view(), name='assign_host_group'),
+    path('users/elevate/', ElevateUserView.as_view(), name='elevate_user'),
+    path('groups/', ListGroupsView.as_view(), name='list_groups'),
 ]

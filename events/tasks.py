@@ -88,6 +88,7 @@ def route_to_ml(event_id: str, log_source: str, payload: dict):
         'network':    analyze_network,
         'filesystem': analyze_filesystem,
         'system':     analyze_system,
+        'browser':     analyze_browser,
     }
     task_map[target](event_id, payload)
     logger.info(f"[ROUTE] Event {event_id} → {target}")
@@ -105,4 +106,9 @@ def analyze_filesystem(event_id: str, payload: dict):
 @shared_task
 def analyze_system(event_id: str, payload: dict):
     logger.info(f"[ML:SYSTEM] Analyzing event {event_id} — (mocked)")
+    # TODO kykmlha sami
+
+@shared_task
+def analyze_browser(event_id: str, payload: dict):
+    logger.info(f"[ML:BROWSER] Analyzing event {event_id} — (mocked)")
     # TODO kykmlha sami
