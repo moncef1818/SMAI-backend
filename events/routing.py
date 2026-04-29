@@ -1,7 +1,5 @@
 ML_ROUTING_MAP = {
     'NetworkMonitor':       'network',
-    'FileIntegrityMonitor': 'filesystem',
-    'ProcessMonitor':       'system',
     'BrowserExtension':       'browser',
 }
 

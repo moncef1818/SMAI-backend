@@ -1,26 +1,55 @@
 services:
 
   db:
-      image: postgres:15
-      environment:
-        POSTGRES_DB: smai_db
-        POSTGRES_USER: smai_user
-        POSTGRES_PASSWORD: smai_password
-        POSTGRES_HOST_AUTH_METHOD: md5
-      ports:
-        - "5432:5432"
-      volumes:
-        - postgres_data:/var/lib/postgresql/data
-      healthcheck:
-        test: ["CMD-SHELL", "pg_isready -U smai_user -d smai_db"]
-        interval: 5s
-        retries: 5
+    image: postgres:15
+    environment:
+      POSTGRES_DB: smai_db
+      POSTGRES_USER: smai_user
+      POSTGRES_PASSWORD: smai_password
+      POSTGRES_HOST_AUTH_METHOD: md5
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smai_user -d smai_db"]
+      interval: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
     ports:
       - "6379:6379"
 
+  ml:
+    build:
+      context: ./ml/network_ml
+      dockerfile: Dockerfile
+    container_name: network-ids-ml
+    ports:
+      - "9871:9871"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:9871/health')\" || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  browser-ml:
+    build:
+      context: ./ml/browser_ml
+      dockerfile: Dockerfile
+    container_name: browser-ids-ml
+    ports:
+      - "9872:9872"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:9872/health')\" || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
   web:
     build: .
     command: >
@@ -30,22 +59,30 @@ services:
       - "8000:8000"
     environment:
       - DJANGO_SETTINGS_MODULE=core.settings
+      - ML_SERVICE_URL=http://ml:9871
+      - BROWSER_ML_SERVICE_URL=http://browser-ml:9872    # 👈 added
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_started
+      ml:
+        condition: service_healthy
 
   celery:
     build: .
     command: celery -A core worker --loglevel=info
     environment:
       - DJANGO_SETTINGS_MODULE=core.settings
+      - ML_SERVICE_URL=http://ml:9871   # 👈 added
+      - BROWSER_ML_SERVICE_URL=http://browser-ml:9872    # 👈 added
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_started
+      ml:
+        condition: service_healthy
 
 volumes:
   postgres_data:
