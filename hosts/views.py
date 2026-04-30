@@ -3,9 +3,10 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.utils import timezone
+from django.db.models import Count
 from django.contrib.auth import get_user_model
 from .models import Host
-from .serializers import HostSerializer ,HostRegistrationSerializer, HeartbeatSerializer
+from .serializers import HostSerializer, HostRegistrationSerializer, HeartbeatSerializer
 import logging
 
 logger = logging.getLogger(__name__)
@@ -100,11 +101,34 @@ class HostDetailsView(APIView):
             return Response({'error': 'You are not authorized to view this host.'},
                              status=status.HTTP_403_FORBIDDEN)
         
-        if request.user.is_leader and host.group.leader != request.user:
+        if request.user.is_group_leader and (not host.group or host.group.leader != request.user):
             return Response({'error': 'You are not authorized to view this host.'},
                              status=status.HTTP_403_FORBIDDEN)
         
-
         serializer = HostSerializer(host)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class HostAgentStatusView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.is_admin:
+            hosts = Host.objects.all()
+        elif request.user.is_group_leader:
+            hosts = Host.objects.filter(group__leader=request.user)
+        else:
+            hosts = Host.objects.filter(pk=request.user.host_id)
+
+        status_counts = (
+            hosts.values('status')
+                 .annotate(count=Count('status'))
+                 .order_by('-count')
+        )
+
+        return Response({
+            'total_hosts': hosts.count(),
+            'status_counts': status_counts,
+            'hosts': HostSerializer(hosts, many=True).data,
+        }, status=status.HTTP_200_OK)
     

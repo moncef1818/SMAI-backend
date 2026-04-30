@@ -68,7 +68,8 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'hosts.authentication.HostAPIKeyAuthentication',  
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'hosts.authentication.HostAPIKeyAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',

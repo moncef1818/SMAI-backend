@@ -1,3 +1,11 @@
+from django.urls import re_path
+from .consumers import IncidentConsumer
+
+websocket_urlpatterns = [
+    re_path(r'ws/incidents/$', IncidentConsumer.as_view()),
+]
+
+# ML routing map for task dispatch
 ML_ROUTING_MAP = {
     'NetworkMonitor':       'network',
     'BrowserExtension':       'browser',

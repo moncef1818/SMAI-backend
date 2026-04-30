@@ -64,7 +64,7 @@ def run_rule_engine(event_id: str, log_source: str, payload: dict, host_id: str)
             event.save()
 
             for result in fired_results:
-                Incident.objects.create(
+                incident = Incident.objects.create(
                     host_id=host_id,
                     event=event,
                     threat_type=result.rule_id,
@@ -73,6 +73,10 @@ def run_rule_engine(event_id: str, log_source: str, payload: dict, host_id: str)
                     ai_summary=result.triggering_fields
                 )
                 logger.info(f"[RULES] Incident created: {result.rule_id} on host {host_id}")
+
+                # Broadcast incident via WebSocket
+                from .consumers import broadcast_incident
+                broadcast_incident.delay(str(incident.incident_id))
 
             # TODO: broadcast incidents via websockets
 
@@ -308,6 +312,10 @@ def create_ml_incident(event_id: str, threat_score: float, predicted_class: str,
             event.save()
             
             logger.info(f"[ML:INCIDENT] Created incident {incident.incident_id} for event {event_id}")
+            
+            # Broadcast incident via WebSocket
+            from .consumers import broadcast_incident
+            broadcast_incident.delay(str(incident.incident_id))
         
         logger.info(f"[ML:INCIDENT] Final severity: {severity}, Score: {threat_score}, Class: {predicted_class}")
         
@@ -373,7 +381,7 @@ def create_browser_ml_incident(
                 event.save()
 
         else:
-            Incident.objects.create(
+            incident = Incident.objects.create(
                 host=event.host,
                 event=event,
                 threat_type=f"ML-BROWSER-{verdict}",
@@ -384,6 +392,10 @@ def create_browser_ml_incident(
             )
             event.detection_source = "ml"
             event.save()
+
+            # Broadcast incident via WebSocket
+            from .consumers import broadcast_incident
+            broadcast_incident.delay(str(incident.incident_id))
 
         logger.info(f"[ML:BROWSER] Incident processed for event {event_id}")
 

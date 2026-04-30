@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.views import TokenRefreshView
 from django.contrib.auth import authenticate, get_user_model
 from .serializers import (
@@ -87,6 +88,37 @@ class UserDetailView(APIView):
         
         serializer.save()
         return Response(serializer.data)
+
+
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        refresh_token = request.data.get('refresh')
+        if not refresh_token:
+            return Response(
+                {'refresh': 'This field is required.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+        except TokenError:
+            return Response(
+                {'detail': 'Token is invalid or expired.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except AttributeError:
+            return Response(
+                {
+                    'success': True,
+                    'message': 'Logout completed. Token blacklist support is not enabled.'
+                },
+                status=status.HTTP_200_OK
+            )
+
+        return Response({'success': True}, status=status.HTTP_200_OK)
 
 
 class ListUsersView(APIView):
