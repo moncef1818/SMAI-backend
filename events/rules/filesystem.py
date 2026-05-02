@@ -1,19 +1,13 @@
 from typing import Any, Dict, List
 from .base import RuleResult, BaseEvaluator, Severity
 
-
 class FileSystemEvaluator(BaseEvaluator):
     """
     File system rules:
-    - A-4d: Suspicious file extension
-    - A-4e: Large file write event
+    - A-4d: DLL/EXE written to System32 by unusual process
+    - A-4e: Ransomware extension change
     - A-4c: Sliding window file writes (requires Redis state - implement later)
     """
-
-    SUSPICIOUS_EXTENSIONS = [
-        ".exe", ".dll", ".scr", ".vbs", ".js", ".bat", ".cmd",
-        ".lnk", ".msi", ".hta", ".pst", ".eml"
-    ]
 
     def evaluate(self, payload: Dict[str, Any], host_id: str, event_id: str) -> List[RuleResult]:
         return [
@@ -22,30 +16,40 @@ class FileSystemEvaluator(BaseEvaluator):
         ]
 
     def _rule_a_4d(self, payload: Dict[str, Any]) -> RuleResult:
-        """Suspicious file extension written to system directories."""
+        event_type = payload.get("EventType", "")
+        extension = payload.get("Extension", "").lower()
         file_path = payload.get("FilePath", "").lower()
-        system_dirs = [r"windows\system32", r"windows\syswow64", r"programfiles"]
-        in_system = any(sysdir in file_path for sysdir in system_dirs)
+        process_name = payload.get("ProcessName", "").lower()
         
-        has_suspicious_ext = any(file_path.endswith(ext.lower()) for ext in self.SUSPICIOUS_EXTENSIONS)
+        targets = {".exe", ".dll", ".sys"}
+        allowed_procs = {"trustedinstaller.exe", "msiexec.exe", "wusa.exe", "svchost.exe"}
         
-        fired = in_system and has_suspicious_ext
+        fired = (event_type == "FileIO/Create" and extension in targets and
+                 "\\system32\\" in file_path and process_name not in allowed_procs)
+                 
         return RuleResult(
             rule_id="A-4d",
             fired=fired,
-            severity=Severity.CRITICAL if fired else Severity.INFO,
+            severity=Severity.HIGH if fired else Severity.INFO,
             mitre="T1574.001",
-            triggering_fields={"FilePath": file_path} if fired else {},
+            triggering_fields={"FilePath": file_path, "ProcessName": process_name} if fired else {},
         )
 
     def _rule_a_4e(self, payload: Dict[str, Any]) -> RuleResult:
-        """Large file write event (potential data exfiltration)."""
-        bytes_written = payload.get("BytesWritten")
-        fired = self._null_safe_check(bytes_written) and bytes_written > 104857600  # > 100MB
+        event_type = payload.get("EventType", "")
+        extension = payload.get("Extension", "").lower()
+        
+        ransom_exts = {
+            ".locked", ".encrypted", ".enc", ".crypt", ".crypted", 
+            ".locky", ".zepto", ".cerber", ".zzzzz", ".shit", ".thor", ".osiris"
+        }
+        
+        fired = event_type == "FileIO/SetInfo" and extension in ransom_exts
+        
         return RuleResult(
             rule_id="A-4e",
             fired=fired,
-            severity=Severity.HIGH if fired else Severity.INFO,
-            mitre="T1041",
-            triggering_fields={"BytesWritten": bytes_written} if fired else {},
-        )
+            severity=Severity.CRITICAL if fired else Severity.INFO,
+            mitre="T1486",
+            triggering_fields={"Extension": extension} if fired else {},
+        )

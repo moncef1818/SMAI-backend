@@ -7,6 +7,7 @@ from django.db.models import Count
 from django.contrib.auth import get_user_model
 from .models import Host
 from .serializers import HostSerializer, HostRegistrationSerializer, HeartbeatSerializer
+from accounts.permissions import IsUser
 import logging
 
 logger = logging.getLogger(__name__)
@@ -71,13 +72,13 @@ class HeartBeat(APIView):
             return Response({'error': 'Host not found.'}, status=status.HTTP_404_NOT_FOUND)
         
 class HostListView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsUser]
 
     def get(self, request):
         
         if request.user.is_admin:
             hosts = Host.objects.all()
-        elif request.user.is_leader:
+        elif request.user.is_group_leader:
             hosts = Host.objects.filter(
                 group__leader=request.user
             )
@@ -88,7 +89,7 @@ class HostListView(APIView):
     
 
 class HostDetailsView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsUser]
 
     def get(self, request, pk):
         try:
@@ -110,7 +111,7 @@ class HostDetailsView(APIView):
 
 
 class HostAgentStatusView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsUser]
 
     def get(self, request):
         if request.user.is_admin:

@@ -245,22 +245,22 @@ def _combine(rules: dict, prob: float) -> tuple[str, str]:
 
     elif has_high:
         # One or two HIGH signals — require ML to confirm
-        verdict = "PHISHING" if prob >= 0.85 else "SUSPICIOUS"
+        verdict = "PHISHING" if prob >= 0.95 else "SUSPICIOUS"
 
     elif has_medium and score >= 20:
         # Several MEDIUM signals — ML decides between PHISHING and SUSPICIOUS
-        if prob >= 0.90:
+        if prob >= 0.98:
             verdict = "PHISHING"
-        elif prob >= 0.70:
+        elif prob >= 0.85:
             verdict = "SUSPICIOUS"
         else:
             verdict = "LEGITIMATE"
 
     elif has_medium:
         # Few MEDIUM signals — only flag if ML is very confident
-        verdict = "SUSPICIOUS" if prob >= 0.90 else "LEGITIMATE"
+        verdict = "SUSPICIOUS" if prob >= 0.95 else "LEGITIMATE"
 
-    elif prob >= 0.97:
+    elif prob >= 0.99:
         # Zero rule hits but ML extremely confident — soft flag only
         verdict = "SUSPICIOUS"
 

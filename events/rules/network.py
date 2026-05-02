@@ -59,7 +59,9 @@ class NetworkEvaluator(BaseEvaluator):
         FwdPackets = payload.get("FwdPackets")
         FwdBytes = payload.get("FwdBytes")
 
-        fired = BwdPackets == 0 and  FwdPackets >= 5 and FwdBytes >= 10240
+        fired = False
+        if all(self._null_safe_check(v) for v in (BwdPackets, FwdPackets, FwdBytes)):
+            fired = BwdPackets == 0 and FwdPackets >= 5 and FwdBytes >= 10240
 
         return RuleResult(
             rule_id="B-2a",
@@ -79,7 +81,9 @@ class NetworkEvaluator(BaseEvaluator):
         FlowDuration = payload.get("FlowDuration")
         FlowBytesPerSec = payload.get("FlowBytesPerSec")
 
-        fired = Protocol == 6 and FlowDuration >= 60000000  and FlowBytesPerSec < 100
+        fired = False
+        if all(self._null_safe_check(v) for v in (Protocol, FlowDuration, FlowBytesPerSec)):
+            fired = Protocol == 6 and FlowDuration >= 60000000 and FlowBytesPerSec < 100
         return RuleResult(
             rule_id="B-2b",
             fired=fired,
@@ -99,7 +103,9 @@ class NetworkEvaluator(BaseEvaluator):
         AckCount = payload.get("AckCount")
         FinCount = payload.get("FinCount")
 
-        fired = RstCount >= 5 and SynCount >= 5 and AckCount == 0 and FinCount == 0
+        fired = False
+        if all(self._null_safe_check(v) for v in (RstCount, SynCount, AckCount, FinCount)):
+            fired = RstCount >= 5 and SynCount >= 5 and AckCount == 0 and FinCount == 0
 
         return RuleResult(
             rule_id="B-2c",
@@ -119,7 +125,9 @@ class NetworkEvaluator(BaseEvaluator):
         UrgCount = payload.get("UrgCount")
         FwdPackets = payload.get("FwdPackets")
 
-        fired = UrgCount > 0 and UrgCount >= 0.5 * FwdPackets
+        fired = False
+        if all(self._null_safe_check(v) for v in (UrgCount, FwdPackets)):
+            fired = UrgCount > 0 and UrgCount >= 0.5 * FwdPackets
 
         return RuleResult(
             rule_id="B-2d",
@@ -138,7 +146,9 @@ class NetworkEvaluator(BaseEvaluator):
         AvgPktSize = payload.get("AvgPktSize")
         FwdPktLenMin = payload.get("FwdPktLenMin")
 
-        fired = Protocol == 17 and AvgPktSize > 1200 and FwdPktLenMin > 900
+        fired = False
+        if all(self._null_safe_check(v) for v in (Protocol, AvgPktSize, FwdPktLenMin)):
+            fired = Protocol == 17 and AvgPktSize > 1200 and FwdPktLenMin > 900
 
         return RuleResult(
             rule_id="B-2e",
@@ -158,7 +168,9 @@ class NetworkEvaluator(BaseEvaluator):
         SynCount = payload.get("SynCount")
         InitWinBytesFwd = payload.get("InitWinBytesFwd")
 
-        fired = Protocol == 6 and SynCount >= 1 and InitWinBytesFwd < 1024 and InitWinBytesFwd > 0
+        fired = False
+        if all(self._null_safe_check(v) for v in (Protocol, SynCount, InitWinBytesFwd)):
+            fired = Protocol == 6 and SynCount >= 1 and InitWinBytesFwd < 1024 and InitWinBytesFwd > 0
 
         return RuleResult(
             rule_id="B-2f",

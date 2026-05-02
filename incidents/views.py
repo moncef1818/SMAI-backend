@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .models import Incident
 from .serializers import IncidentSerializer
+from accounts.permissions import IsUser
 
 
 class IncidentScopeMixin:
@@ -33,7 +34,7 @@ class IncidentScopeMixin:
 
 
 class IncidentListView(IncidentScopeMixin, APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsUser]
 
     def get(self, request):
         queryset = self.filter_queryset(self.get_queryset())
@@ -42,7 +43,7 @@ class IncidentListView(IncidentScopeMixin, APIView):
 
 
 class IncidentSummaryView(IncidentScopeMixin, APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsUser]
 
     def get(self, request):
         queryset = self.filter_queryset(self.get_queryset())
@@ -72,7 +73,7 @@ class IncidentSummaryView(IncidentScopeMixin, APIView):
 
 
 class IncidentAlertsView(IncidentScopeMixin, APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsUser]
 
     def get(self, request):
         queryset = self.filter_queryset(self.get_queryset())
@@ -82,10 +83,63 @@ class IncidentAlertsView(IncidentScopeMixin, APIView):
 
 
 class NetworkIncidentListView(IncidentScopeMixin, APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsUser]
 
     def get(self, request):
         queryset = self.filter_queryset(self.get_queryset())
         queryset = queryset.filter(event__log_source='NetworkMonitor')
         serializer = IncidentSerializer(queryset.order_by('-created_at'), many=True)
         return Response(serializer.data)
+
+
+class NetworkSummaryView(IncidentScopeMixin, APIView):
+    permission_classes = [IsAuthenticated, IsUser]
+
+    def get(self, request):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        # Network-specific metrics
+        total_incidents = queryset.count()
+        network_incidents = queryset.filter(event__log_source='NetworkMonitor').count()
+        critical_incidents = queryset.filter(severity='critical').count()
+        high_incidents = queryset.filter(severity='high').count()
+
+        # Calculate network score (0-100, higher is better)
+        # Base score of 100, reduce based on incidents
+        base_score = 100
+        score_penalty = min(total_incidents * 2, 80)  # Max penalty of 80 points
+        network_score = max(0, base_score - score_penalty)
+
+        # Threat vector percentages (simulated based on incident data)
+        # If no network incidents, use general incident data with lower weights
+        if network_incidents == 0:
+            anomaly_score = min(100, total_incidents * 5 + critical_incidents * 10)
+            latency_score = min(100, high_incidents * 8 + total_incidents * 3)
+            throughput_score = min(100, critical_incidents * 15 + high_incidents * 5)
+        else:
+            anomaly_score = min(100, network_incidents * 10 + critical_incidents * 20)
+            latency_score = min(100, high_incidents * 15 + total_incidents * 5)
+            throughput_score = min(100, critical_incidents * 25 + network_incidents * 8)
+
+        # Network flow stats (simulated)
+        active_flows = max(50, 142 - total_incidents * 2)
+        bandwidth = max(5.0, 14.2 - total_incidents * 0.1)
+
+        return Response({
+            'network_score': network_score,
+            'threat_vectors': {
+                'anomaly_z': anomaly_score,
+                'latency_iat': latency_score,
+                'throughput': throughput_score,
+            },
+            'network_stats': {
+                'active_flows': active_flows,
+                'bandwidth_bpps': round(bandwidth, 1),
+            },
+            'incident_counts': {
+                'total': total_incidents,
+                'network': network_incidents,
+                'critical': critical_incidents,
+                'high': high_incidents,
+            }
+        })

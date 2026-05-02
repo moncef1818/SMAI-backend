@@ -10,7 +10,7 @@ from .serializers import (
     UserRegistrationSerializer, UserLoginSerializer, UserSerializer,
     AssignUserToGroupView, ElevateUserSerializer, UserDetailSerializer
 )
-from .permissions import IsAdmin
+from .permissions import IsAdmin, IsUser
 
 from hosts.models import Host
 from groups.models import Group
@@ -70,7 +70,7 @@ class LoginView(APIView):
 
 
 class UserDetailView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsUser]
 
     def get(self, request):
         serializer = UserDetailSerializer(request.user)
@@ -91,7 +91,7 @@ class UserDetailView(APIView):
 
 
 class LogoutView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsUser]
 
     def post(self, request):
         refresh_token = request.data.get('refresh')

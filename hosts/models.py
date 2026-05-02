@@ -41,3 +41,21 @@ class Host(models.Model):
     @property
     def is_authenticated(self):
         return True
+
+    @property
+    def threat_score(self):
+        incidents = self.incidents.all().order_by('-created_at')[:10]
+        if not incidents:
+            return 0
+        
+        score = 0
+        for i in incidents:
+            if i.severity == 'critical':
+                score += 15
+            elif i.severity == 'high':
+                score += 10
+            elif i.severity == 'medium':
+                score += 5
+            elif i.severity == 'low':
+                score += 2
+        return min(100, score)

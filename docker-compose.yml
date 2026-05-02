@@ -57,6 +57,8 @@ services:
              daphne -b 0.0.0.0 -p 8000 core.asgi:application"
     ports:
       - "8000:8000"
+    volumes:
+      - .:/app
     environment:
       - DJANGO_SETTINGS_MODULE=core.settings
       - ML_SERVICE_URL=http://ml:9871

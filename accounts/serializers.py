@@ -69,10 +69,10 @@ class UserDetailSerializer(serializers.ModelSerializer):
 class AssignUserToGroupView(serializers.Serializer):
     """Admin assigns a host to a group (which updates all users of that host)."""
     host_id = serializers.CharField()
-    group_id = serializers.IntegerField()
+    group_id = serializers.UUIDField()
 
 
 class ElevateUserSerializer(serializers.Serializer):
     user_id = serializers.IntegerField()
-    new_role = serializers.ChoiceField(choices=['group_leader', 'admin'])
+    new_role = serializers.ChoiceField(choices=['leader', 'admin'])
 

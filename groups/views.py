@@ -7,17 +7,18 @@ from .models import Group
 from .serializers import GroupSerializer, AssignLeaderSerializer, AssignHostSerializer
 from hosts.serializers import HostSerializer
 from hosts.models import Host
+from accounts.permissions import IsUser
 
 User = get_user_model()
 
 class GroupListView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsUser]
 
     def get(self, request):
         
         if request.user.is_admin:
             groups = Group.objects.all()
-        elif request.user.is_leader:
+        elif request.user.is_group_leader:
             groups = Group.objects.filter(
                 leader=request.user
             )
@@ -27,7 +28,7 @@ class GroupListView(APIView):
         return Response(GroupSerializer(groups, many=True).data ,status=status.HTTP_200_OK)
     
 class GroupCreateView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsUser]
 
     def post(self, request):
 
@@ -42,7 +43,7 @@ class GroupCreateView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 class AssignHostToGroupView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsUser]
 
     def post(self, request,pk):
         if not request.user.is_admin:
@@ -65,7 +66,7 @@ class AssignHostToGroupView(APIView):
             return Response({'error': 'Host not found.'}, status=status.HTTP_404_NOT_FOUND)
 
 class AssignLeaderToGroupView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsUser]
     def post(self, request,pk):
         if not request.user.is_admin:
             return Response({'error': 'Only admins can assign leaders to groups.'},
@@ -76,7 +77,7 @@ class AssignLeaderToGroupView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
         try:
-            group = Group.objects(pk=pk)
+            group = Group.objects.get(pk=pk)
             leader =  User.objects.get(pk=serializer.validated_data['leader_id'])
 
             group.leader = leader

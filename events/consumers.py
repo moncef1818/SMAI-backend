@@ -3,10 +3,14 @@ import logging
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.core.cache import cache
+from django.contrib.auth import get_user_model
+from rest_framework_simplejwt.tokens import AccessToken
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from incidents.models import Incident
 from incidents.serializers import IncidentSerializer
 
 logger = logging.getLogger(__name__)
+User = get_user_model()
 
 
 class IncidentConsumer(AsyncJsonWebsocketConsumer):
@@ -14,16 +18,46 @@ class IncidentConsumer(AsyncJsonWebsocketConsumer):
 
     async def connect(self):
         """Handle WebSocket connection."""
-        self.user = self.scope['user']
+        # Extract and validate JWT token from query parameters
+        query_string = self.scope.get('query_string', b'').decode('utf-8')
+        token = None
 
-        if not self.user or not self.user.is_authenticated:
+        logger.info(f"[WS] Processing WebSocket connection to {self.scope.get('path')}")
+
+        if query_string:
+            params = dict(param.split('=', 1) for param in query_string.split('&') if '=' in param)
+            token = params.get('token')
+            logger.info(f"[WS] Found token parameter: {token[:20] if token else 'None'}...")
+
+        if token:
+            try:
+                access_token = AccessToken(token)
+                user_id = access_token.payload.get('user_id')
+                logger.info(f"[WS] Token valid, user_id: {user_id}")
+                if user_id:
+                    self.user = await self.get_user(user_id)
+                    logger.info(f"[WS] User lookup result: {self.user}")
+                    if not self.user or not self.user.is_active:
+                        logger.warning(f"[WS] User not found or inactive: {user_id}")
+                        await self.close()
+                        return
+                else:
+                    logger.warning("[WS] No user_id in JWT token")
+                    await self.close()
+                    return
+            except (InvalidToken, TokenError) as e:
+                logger.warning(f"[WS] Invalid JWT token: {e}")
+                await self.close()
+                return
+        else:
+            logger.warning("[WS] No token provided in WebSocket connection")
             await self.close()
             return
 
         # Create group name based on user role
         if self.user.is_admin:
             self.group_name = 'incidents_admin'
-        elif self.user.is_group_leader:
+        elif self.user.is_group_leader and self.user.group:
             self.group_name = f'incidents_group_{self.user.group.id}'
         else:
             self.group_name = f'incidents_user_{self.user.id}'
@@ -76,21 +110,22 @@ class IncidentConsumer(AsyncJsonWebsocketConsumer):
         incidents = queryset.order_by('-created_at')[:10]  # Last 10 incidents
         return IncidentSerializer(incidents, many=True).data
 
-    @database_sync_to_async
     def get_incident_queryset(self):
         """Get filtered incident queryset based on user role."""
         if self.user.is_admin:
             return Incident.objects.select_related('host', 'event').all()
-        elif self.user.is_group_leader:
-            return Incident.objects.select_related('host', 'event').filter(host__group__leader=self.user)
+        elif self.user.is_group_leader and self.user.group:
+            return Incident.objects.select_related('host', 'event').filter(host__group=self.user.group)
         else:
             return Incident.objects.select_related('host', 'event').filter(host=self.user.host)
 
     @database_sync_to_async
-    def acknowledge_incident(self, incident_id):
-        """Mark incident as acknowledged (placeholder for future feature)."""
-        # This could be extended to mark incidents as read/acknowledged
-        logger.info(f"[WS] User {self.user.username} acknowledged incident {incident_id}")
+    def get_user(self, user_id):
+        """Get user from database."""
+        try:
+            return User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return None
 
 
 # Utility functions for broadcasting incidents

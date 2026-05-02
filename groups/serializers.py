@@ -8,14 +8,15 @@ User = get_user_model()
 class GroupSerializer(serializers.ModelSerializer):
     hosts = HostSerializer(many=True, read_only=True)
     leader_username = serializers.ReadOnlyField(source='leader.username' ,read_only=True)
+    description = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = Group
-        fields = ['id', 'name', 'leader', 'leader_username', 'hosts', 'created_at']
+        fields = ['id', 'name', 'description', 'leader', 'leader_username', 'hosts', 'created_at']
         read_only_fields = ['id', 'created_at']
 
 class AssignHostSerializer(serializers.Serializer):
     host_id = serializers.UUIDField()
 
 class AssignLeaderSerializer(serializers.Serializer):
-    user_id = serializers.UUIDField()
+    leader_id = serializers.UUIDField()

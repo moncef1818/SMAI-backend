@@ -6,7 +6,7 @@ from hosts.models import Host
 class User(AbstractUser):
     ROLE_CHOICES = [
         ('admin', 'Administrator'),
-        ('group_leader', 'Group Leader'),
+        ('leader', 'Group Leader'),
         ('employee', 'Employee'),
     ]
     
@@ -30,7 +30,7 @@ class User(AbstractUser):
 
     @property
     def is_group_leader(self):
-        return self.role == 'group_leader'
+        return self.role == 'leader'
 
     @property
     def is_employee(self):
